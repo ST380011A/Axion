@@ -41,7 +41,7 @@ int CHudWatermark::Draw(float time)
 	UnpackRGB(r, g, b, gHUD.m_iDefaultHUDColor);
 
 	char str[256];
-	sprintf(str, "^2Client-Mod^7: built ^1%s^7, commit ^2%s^7, architecture ^3%s^7, platform ^5%s\n",
+	sprintf(str, "^2Axion^7: built ^1%s^7, commit ^2%s^7, architecture ^3%s^7, platform ^5%s\n",
 		BuildInfo::GetDate(),
 		BuildInfo::GetCommitHash(),
 		BuildInfo::GetArchitecture(),

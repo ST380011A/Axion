@@ -172,8 +172,8 @@ int DLLEXPORT Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 	memcpy( &gEngfuncs, pEnginefuncs, sizeof(cl_enginefunc_t) - sizeof( void * ) );
 
 
-	ConsolePrint( "\n\nClient Mod\n" );
-	ConsolePrint( "GitHub page: https://github.com/Elinsrc/Client-Mod/\n\n" );
+	ConsolePrint( "\n\nAxion\n" );
+	ConsolePrint( "GitHub page: https://github.com/Elinsrc/Axion/\n\n" );
 	char filePath[256];
 	sprintf(filePath, "%s/customconfig.cfg", gEngfuncs.pfnGetGameDirectory());
 

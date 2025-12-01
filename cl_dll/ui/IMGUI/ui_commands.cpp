@@ -30,7 +30,7 @@ void CImGuiCommands::Draw()
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
-    ImGui::Begin("Client-Mod: CVars Menu", &m_ShowCommands, window_flags);
+    ImGui::Begin("Axion: CVars Menu", &m_ShowCommands, window_flags);
 
     ImVec2 size = ImGui::GetWindowSize();
 

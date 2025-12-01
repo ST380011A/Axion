@@ -1,4 +1,4 @@
-package su.xash.clientmod;
+package su.xash.axion;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
         runButton.setOnClickListener(v -> startGame(argvInput.getText().toString()));
         infoButton.setOnClickListener(v -> {
-            String url = "https://github.com/Elinsrc/Client-Mod";
+            String url = "https://github.com/Elinsrc/Axion";
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(intent);
         });

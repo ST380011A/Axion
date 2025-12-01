@@ -12,7 +12,7 @@
 #include "cl_util.h"
 
 #if USE_VGUI
-#include "vgui_TeamFortressViewport.h"
+#include "imgui_viewport.h"
 #endif
 
 #include "discord_integration.h"
@@ -126,9 +126,9 @@ namespace discord_integration
 				DiscordRichPresence presence{};
 
 				presence.largeImageKey = "engine";
-				presence.smallImageKey = "client-mod";
-				presence.largeImageText = "https://github.com/Elinsrc/Client-Mod";
-				presence.smallImageText = "Client-Mod";
+				presence.smallImageKey = "axion;
+				presence.largeImageText = "https://github.com/Elinsrc/Axion";
+				presence.smallImageText = "Axion";
 
 				static int64_t gametime = time( 0 );
 				presence.startTimestamp = gametime;
@@ -141,8 +141,8 @@ namespace discord_integration
 						get_map_name(map+map_len, ARRAYSIZE(map)-map_len);
 
 					char ServerName[256] = "Server: ";
-#if USE_VGUI
-					char* szServerName = gViewPort->m_szServerName;
+#if USE_IMGUI
+					char* szServerName = g_ImGuiViewport.m_szServerName;
 #else
 					char* szServerName = gHUD.m_szServerName;
 #endif

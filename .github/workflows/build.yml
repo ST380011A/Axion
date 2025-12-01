@@ -76,16 +76,14 @@ jobs:
       - name: Build on Linux
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          cmake -B build -S . -DUSE_DISCORD_RPC=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-undefined" -DCMAKE_INSTALL_PREFIX="$PWD/dist"
+          cmake -B build -S . -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-undefined" -DCMAKE_INSTALL_PREFIX="$PWD/dist"
           cmake --build build --target all
           cmake --build build --target install
 
       - name: Build on Linux x64
         if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
         run: |
-          cmake -B build64 -S . -D64BIT=ON -DUSE_DISCORD_RPC=ON \
-            -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-undefined" \
-            -DCMAKE_INSTALL_PREFIX="$PWD/dist64"
+          cmake -B build64 -S . -D64BIT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-undefined" -DCMAKE_INSTALL_PREFIX="$PWD/dist64"
           cmake --build build64 --target all
           cmake --build build64 --target install
 

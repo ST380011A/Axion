@@ -1,6 +1,6 @@
-# Client-Mod [![Build Status](https://github.com/Elinsrc/Client-Mod/actions/workflows/build.yml/badge.svg)](https://github.com/Elinsrc/Client-Mod/actions) <img align="right" src="https://raw.githubusercontent.com/Elinsrc/Client-Mod/refs/heads/master/android/app/src/main/res/drawable/ic_launcher.png" alt="Client-Mod" />
+# Axion (formerly Client-Mod) [![Build Status](https://github.com/Elinsrc/Axion/actions/workflows/build.yml/badge.svg)](https://github.com/Elinsrc/Axion/actions) <img align="right" src="https://raw.githubusercontent.com/Elinsrc/Axion/refs/heads/master/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="Axion" />
 
- - **Client-Mod** is a modification of the **Half-Life** client for **Xash3D FWGS** and **GoldSource**, based on [hlsdk-portable](https://github.com/FWGS/hlsdk-portable) and [PrimeXT](https://github.com/SNMetamorph/PrimeXT).
+ - **Axion** is a modification of the **Half-Life** client for **Xash3D FWGS** and **GoldSource**, based on [hlsdk-portable](https://github.com/FWGS/hlsdk-portable) and [PrimeXT](https://github.com/SNMetamorph/PrimeXT).
 
 ## Configuration (CVars)
 | CVar                        | Default             | Min | Max | Description                                                                                                       |
@@ -74,13 +74,13 @@
 | hud_health_divider          | 1                   | 0   | 1   | Show separator bar after health                                                                                   |
 | hud_allow_hd                | 0                   | 0   | 1   | Draw HL25 style HUD and disable hud_deathnotice_bg                                                                |
 | ui_imgui_demo               | -                   | -   | -   | Shows the ImGui demo window                                                                                       |
-| ui_commands                 | 0                   | -   | -   | Open the Client-Mod ImGui settings menu (HUD, crosshair, effects, debug, etc.)                                    |
+| ui_commands                 | 0                   | -   | -   | Open the Axion ImGui settings menu (HUD, crosshair, effects, debug, etc.)                                    |
 | ui_imgui_scale              | 0                   | 1   | -   | Adjusts the scaling of the ImGui elements                                                                         |
 
 ## Building
 Clone the source code:
 ```
-git clone https://github.com/Elinsrc/Client-Mod --recursive
+git clone https://github.com/Elinsrc/Axion --recursive
 ```
 ### Windows
 ```
@@ -101,5 +101,5 @@ cmake --build build --config Release
  - Thanks To Valve for [Half-Life](https://store.steampowered.com/app/70/HalfLife/) and [hlsdk](https://github.com/ValveSoftware/halflife)
  - Thanks To [FWGS](https://github.com/FWGS) for [hlsdk-portable](https://github.com/FWGS/hlsdk-portable)
  - Thanks To [YaLTeR](https://github.com/YaLTeR) for [OpenAG](https://github.com/YaLTeR/OpenAG)
- - Thanks To [Velaron](https://github.com/Velaron) for [AndroidLauncher](https://github.com/Elinsrc/Client-Mod/tree/master/android)
- - Thanks To [SNMetamorph](https://github.com/SNMetamorph) for [BuildInfo](https://github.com/Elinsrc/Client-Mod/blob/master/public/build_info.h), [goldsrc-monitor](https://github.com/SNMetamorph/goldsrc-monitor) and [imgui_manager](https://github.com/SNMetamorph/PrimeXT/tree/master/client/ui)
+ - Thanks To [Velaron](https://github.com/Velaron) for [AndroidLauncher](https://github.com/Elinsrc/Axion/tree/master/android)
+ - Thanks To [SNMetamorph](https://github.com/SNMetamorph) for [BuildInfo](https://github.com/Elinsrc/Axion/blob/master/public/build_info.h), [goldsrc-monitor](https://github.com/SNMetamorph/goldsrc-monitor) and [imgui_manager](https://github.com/SNMetamorph/PrimeXT/tree/master/client/ui)

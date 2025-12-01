@@ -40,7 +40,7 @@ include(CheckCSourceCompiles)
 include(VSForceXPToolchain) # Force XP toolchain for Visual Studio
 include(CheckIPOSupported)
 
-project (CLIENT-MOD)
+project (AXION)
 
 #--------------
 # USER DEFINES \
