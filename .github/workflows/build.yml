@@ -33,13 +33,13 @@ jobs:
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '_')" >> $GITHUB_OUTPUT
 
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Client-Mod-android.apk
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Axion-android.apk
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Client-Mod-${{ steps.extract_branch.outputs.branch }}-android
-          path: android/app/build/outputs/apk/debug/Client-Mod-android.apk
+          name: Axion-${{ steps.extract_branch.outputs.branch }}-android
+          path: android/app/build/outputs/apk/debug/Axion-android.apk
 
   build:
     runs-on: ${{ matrix.os }}
@@ -127,28 +127,28 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
         uses: actions/upload-artifact@v4
         with:
-          name: Client-Mod-${{ steps.extract_branch.outputs.branch }}-linux
+          name: Axion-${{ steps.extract_branch.outputs.branch }}-linux
           path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
 
       - name: Upload linux x64 artifact
         if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
         uses: actions/upload-artifact@v4
         with:
-          name: Client-Mod-${{ steps.extract_branch.outputs.branch }}-linux-x64
+          name: Axion-${{ steps.extract_branch.outputs.branch }}-linux-x64
           path: dist64/${{ steps.extract_gamedir.outputs.gamedir }}
 
       - name: Upload windows artifact
         if: startsWith(matrix.os, 'windows')
         uses: actions/upload-artifact@v4
         with:
-          name: Client-Mod-${{ steps.extract_branch.outputs.branch }}-windows
+          name: Axion-${{ steps.extract_branch.outputs.branch }}-windows
           path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
 
       - name: Upload windows x64 artifact
         if: startsWith(matrix.os, 'windows')
         uses: actions/upload-artifact@v4
         with:
-          name: Client-Mod-${{ steps.extract_branch.outputs.branch }}-windows-x64
+          name: Axion-${{ steps.extract_branch.outputs.branch }}-windows-x64
           path: dist64/${{ steps.extract_gamedir.outputs.gamedir }}
 
   release:
@@ -175,7 +175,7 @@ jobs:
           else
             TAG_NAME="continuous-${GITHUB_REF_NAME}"
           fi
-          RELEASE_NAME="Client-Mod $TAG_NAME Build"
+          RELEASE_NAME="Axion $TAG_NAME Build"
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
   
@@ -197,11 +197,11 @@ jobs:
         run: |
           cd artifacts/
           mkdir files
-          mv Client-Mod-*-android/* files/
-          zip -j files/Client-Mod-linux.zip Client-Mod-*-linux/*/*
-          zip -j files/Client-Mod-linux-x64.zip Client-Mod-*-linux-x64/*/*
-          zip -j files/Client-Mod-windows.zip Client-Mod-*-windows/*/*
-          zip -j files/Client-Mod-windows-x64.zip Client-Mod-*-windows-x64/*/*
+          mv Axion-*-android/* files/
+          zip -j files/Axion-linux.zip Axion-*-linux/*/*
+          zip -j files/Axion-linux-x64.zip Axion-*-linux-x64/*/*
+          zip -j files/Axion-windows.zip Axion-*-windows/*/*
+          zip -j files/Axion-windows-x64.zip Axion-*-windows-x64/*/*
           ls -R .
           cd ../
   
