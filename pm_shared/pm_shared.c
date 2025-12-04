@@ -38,6 +38,8 @@ extern float vJumpAngles[3];
 extern void update_player_info(int onground, int inwater, int walking);
 
 static int pm_shared_initialized = 0;
+static int s_bBHopCap = 0;
+static float s_flBHopCheckTime = 0.0f;
 
 #if _MSC_VER
 #pragma warning( disable : 4305 )
@@ -58,6 +60,7 @@ playermove_t *pmove = NULL;
 #define VEC_HULL_MAX		36
 #define VEC_VIEW		28
 #define	STOP_EPSILON		0.1f
+#define BHOP_DETECT_DELAY	0.3f
 
 #define CTEXTURESMAX		512			// max number of textures loaded
 #include "pm_materials.h"
@@ -116,6 +119,12 @@ static char grgszTextureName[CTEXTURESMAX][CBTEXTURENAMEMAX];
 static char grgchTextureType[CTEXTURESMAX];
 
 int g_onladder = 0;
+
+void PM_ResetBHopDetection( void )
+{
+	s_bBHopCap = 0;
+	s_flBHopCheckTime = 0.0f;
+}
 
 static void PM_InitTrace( trace_t *trace, const vec3_t end )
 {
@@ -945,7 +954,10 @@ int PM_FlyMove( void )
 
 		// modify original_velocity so it parallels all of the clip planes
 		//
-		if( pmove->movetype == MOVETYPE_WALK && ( ( pmove->onground == -1 ) || ( pmove->friction != 1 ) ) )	// relfect player velocity
+		// reflect player velocity
+		// Only give this a try for first impact plane because you can get yourself stuck in an acute corner by jumping in place
+		// and pressing forward and nobody was really using this bounce/reflection feature anyway...
+		if( numplanes == 1 && pmove->movetype == MOVETYPE_WALK && ( ( pmove->onground == -1 ) || ( pmove->friction != 1 )))
 		{
 			for( i = 0; i < numplanes; i++ )
 			{
@@ -1698,7 +1710,7 @@ int PM_CheckStuck( void )
 	//
 	// Deal with precision error in network.
 	//
-	if( !pmove->server )
+	if( !( pmove->server && pmove->multiplayer ))
 	{
 		// World or BSP model
 		if( ( hitent == 0 ) || ( pmove->physents[hitent].model != NULL ) )
@@ -2477,7 +2489,6 @@ PM_Jump
 void PM_Jump( void )
 {
 	int i;
-	// qboolean bunnyjump = false;
 
 	qboolean tfc = false;
 
@@ -2562,19 +2573,20 @@ void PM_Jump( void )
 	// In the air now.
 	pmove->onground = -1;
 
-	/*if( pmove->multiplayer )
-		bunnyjump = atoi( pmove->PM_Info_ValueForKey( pmove->physinfo, "bj" ) ) ? true : false;
+	if ( s_bBHopCap > 0 )
+		PM_PreventMegaBunnyJumping();
 
-	if( !bunnyjump )
-		PM_PreventMegaBunnyJumping();*/
-
-	if( tfc )
+	// Don't play jump sounds while frozen.
+	if( !( pmove->flags & FL_FROZEN ))
 	{
-		pmove->PM_PlaySound( CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, PITCH_NORM );
-	}
-	else
-	{
-		PM_PlayStepSound( PM_MapTextureTypeStepType( pmove->chtexturetype ), 1.0f );
+		if( tfc )
+		{
+			pmove->PM_PlaySound( CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, PITCH_NORM );
+		}
+		else
+		{
+			PM_PlayStepSound( PM_MapTextureTypeStepType( pmove->chtexturetype ), 1.0f );
+		}
 	}
 
 	// See if user can super long jump?
@@ -2613,6 +2625,15 @@ void PM_Jump( void )
 
 	// Flag that we jumped.
 	pmove->oldbuttons |= IN_JUMP;	// don't jump again until released
+
+	// BHop autodetection
+	float speed = sqrtf( pmove->velocity[0] * pmove->velocity[0] + pmove->velocity[1] * pmove->velocity[1] );
+	int isLongJumping = cansuperjump && ( pmove->oldbuttons & IN_DUCK );
+
+	if( s_flBHopCheckTime == 0 && speed >= pmove->maxspeed * BUNNYJUMP_MAX_SPEED_FACTOR && isLongJumping == 0 )
+	{
+		s_flBHopCheckTime = pmove->time + ( BHOP_DETECT_DELAY * 1000 );
+	}
 }
 
 /*
@@ -2854,6 +2875,15 @@ void PM_CheckParamters( void )
 		pmove->maxspeed = min( maxspeed, pmove->maxspeed );
 	}
 
+	// Slow down, I'm pulling it! (a box maybe) but only when I'm standing on ground
+	//
+	// JoshA: Moved this to CheckParamters rather than working on the velocity,
+	// as otherwise it affects every integration step incorrectly.
+	if( ( pmove->onground != -1 ) && ( pmove->cmd.buttons & IN_USE ))
+	{
+		pmove->maxspeed *= 1.0f / 3.0f;
+	}
+
 	if( ( spd != 0.0f ) && ( spd > pmove->maxspeed ) )
 	{
 		float fRatio = pmove->maxspeed / spd;
@@ -2974,7 +3004,11 @@ void PM_PlayerMove( qboolean server )
 	{
 		if( PM_CheckStuck() )
 		{
-			return;  // Can't move, we're stuck
+			// Let the user try to duck to get unstuck
+			PM_Duck();
+
+			if( PM_CheckStuck() )
+				return;  // Can't move, we're stuck
 		}
 	}
 
@@ -3018,12 +3052,6 @@ void PM_PlayerMove( qboolean server )
 			//  it will be set immediately again next frame if necessary
 			pmove->movetype = MOVETYPE_WALK;
 		}
-	}
-
-	// Slow down, I'm pulling it! (a box maybe) but only when I'm standing on ground
-	if( ( pmove->onground != -1 ) && ( pmove->cmd.buttons & IN_USE ) )
-	{
-		VectorScale( pmove->velocity, 0.3, pmove->velocity );
 	}
 
 	// Handle movement
@@ -3330,6 +3358,36 @@ void PM_Move( struct playermove_s *ppmove, int server )
 		pmove->waterlevel > 1,
 		pmove->movetype == MOVETYPE_WALK
 	);
+	// BHop autodetection
+	if( s_flBHopCheckTime > 0 )
+	{
+		float speed = sqrtf( pmove->velocity[0] * pmove->velocity[0] + pmove->velocity[1] * pmove->velocity[1] );
+
+		if( pmove->time >= s_flBHopCheckTime )
+		{
+			if( pmove->dead || speed < pmove->maxspeed * BUNNYJUMP_MAX_SPEED_FACTOR )
+			{
+				s_flBHopCheckTime = 0.0f;
+			}
+			else
+			{
+				if( pmove->multiplayer == 1 )
+					pmove->Con_Printf( "BHop speed limit disabled to match the server.\n" );
+				s_bBHopCap = 0;
+				s_flBHopCheckTime = -1;
+			}
+		}
+		else
+		{
+			if( speed >= pmove->maxspeed * 1.105 && speed <= pmove->maxspeed * 1.2 )
+			{
+				if( pmove->multiplayer == 1 )
+					pmove->Con_Printf( "BHop speed limit enabled to match the server.\n" );
+				s_bBHopCap = 1;
+				s_flBHopCheckTime = 0;
+			}
+		}
+	}
 }
 
 int PM_GetVisEntInfo( int ent )

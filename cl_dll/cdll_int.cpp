@@ -286,6 +286,7 @@ int DLLEXPORT HUD_VidInit( void )
 #if USE_IMGUI
 	g_ImGuiManager.VidInitialize();
 #endif
+	PM_ResetBHopDetection();
 	return 1;
 }
 
