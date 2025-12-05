@@ -31,6 +31,19 @@
 #include "pm_movevars.h"
 #include "pm_debug.h"
 
+enum slowmotion_e
+{
+	slowMotionNone,
+	//! speed < USE_SLOWDOWN_DETECT_MIN * maxSpeed
+	slowMotionLowSpeed,
+	//! USE_SLOWDOWN_DETECT_MIN * maxSpeed <= speed < USE_SLOWDOWN_DETECT_MAX * maxSpeed
+	slowMotionMidSpeed,
+	//! speed >= USE_SLOWDOWN_DETECT_MAX * maxSpeed
+	slowMotionHighSpeed,
+	//! Successfully detected the server mode.
+	slowMotionDone,
+};
+
 // Spectator Mode
 int iJumpSpectator;
 extern float vJumpOrigin[3];
@@ -40,6 +53,13 @@ extern void update_player_info(int onground, int inwater, int walking);
 static int pm_shared_initialized = 0;
 static int s_bBHopCap = 0;
 static float s_flBHopCheckTime = 0.0f;
+static float s_flUseSlowdownCheckTime = 0.0f;
+static int s_bUseSlowdownNew = 1;
+static int s_nUseSlowDownDetectionState = slowMotionNone;
+static int s_iUseNonSlowDownCount;
+static int s_iUseSlowDownCount;
+static float playerMaxSpeed = 0.0f;
+static int onGroundFrames = 0;
 
 #if _MSC_VER
 #pragma warning( disable : 4305 )
@@ -61,6 +81,9 @@ playermove_t *pmove = NULL;
 #define VEC_VIEW		28
 #define	STOP_EPSILON		0.1f
 #define BHOP_DETECT_DELAY	0.3f
+#define USE_SLOWDOWN_DETECT_DELAY 0.3f
+#define USE_SLOWDOWN_DETECT_MIN 0.16f
+#define USE_SLOWDOWN_DETECT_MAX 0.28f
 
 #define CTEXTURESMAX		512			// max number of textures loaded
 #include "pm_materials.h"
@@ -124,6 +147,15 @@ void PM_ResetBHopDetection( void )
 {
 	s_bBHopCap = 0;
 	s_flBHopCheckTime = 0.0f;
+}
+
+void PM_ResetUseSlowDownDetection( void )
+{
+	s_flUseSlowdownCheckTime = 0.0f;
+	s_nUseSlowDownDetectionState = slowMotionNone;
+	s_iUseNonSlowDownCount = 0;
+	s_iUseSlowDownCount = 0;
+	s_bUseSlowdownNew = 1;
 }
 
 static void PM_InitTrace( trace_t *trace, const vec3_t end )
@@ -2874,12 +2906,21 @@ void PM_CheckParamters( void )
 	{
 		pmove->maxspeed = min( maxspeed, pmove->maxspeed );
 	}
+	playerMaxSpeed = pmove->maxspeed;
 
 	// Slow down, I'm pulling it! (a box maybe) but only when I'm standing on ground
 	//
 	// JoshA: Moved this to CheckParamters rather than working on the velocity,
 	// as otherwise it affects every integration step incorrectly.
-	if( ( pmove->onground != -1 ) && ( pmove->cmd.buttons & IN_USE ))
+	if( pmove->onground != -1 )
+	{
+		onGroundFrames++;
+	}
+	else
+	{
+		onGroundFrames = 0;
+	}
+	if( (s_bUseSlowdownNew == 1) && ( onGroundFrames >= 3 ) && ( pmove->cmd.buttons & IN_USE ))
 	{
 		pmove->maxspeed *= 1.0f / 3.0f;
 	}
@@ -3052,6 +3093,86 @@ void PM_PlayerMove( qboolean server )
 			//  it will be set immediately again next frame if necessary
 			pmove->movetype = MOVETYPE_WALK;
 		}
+	}
+
+	// Slowdown autodetection
+	if( ( pmove->onground != -1 ) && ( pmove->cmd.buttons & IN_USE ) )
+	{
+		if( !s_bUseSlowdownNew )
+		{
+			// Slow down, I'm pulling it! (a box maybe) but only when I'm standing on ground
+			VectorScale(pmove->velocity, 0.3, pmove->velocity);
+		}
+		else if( s_nUseSlowDownDetectionState < slowMotionDone )
+		{
+			if( s_flUseSlowdownCheckTime == 0.0f )
+				s_flUseSlowdownCheckTime = pmove->time;
+		}
+		if( s_nUseSlowDownDetectionState < slowMotionDone &&
+			pmove->time > s_flUseSlowdownCheckTime + ( USE_SLOWDOWN_DETECT_DELAY * 1000 ) )
+		{
+			float speed = sqrtf( pmove->velocity[0] * pmove->velocity[0] + pmove->velocity[1] * pmove->velocity[1] );
+			if( pmove->cmd.buttons & ( IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT ) &&
+				speed >= 25.0f )
+			{
+				// We're moving in some direction. Try to auto-detect server's +use slowdown type
+				int oldState = s_nUseSlowDownDetectionState;
+				int newState;
+
+				if (speed >= USE_SLOWDOWN_DETECT_MAX * playerMaxSpeed)
+					newState = slowMotionHighSpeed;
+				else if (speed >= USE_SLOWDOWN_DETECT_MIN * playerMaxSpeed)
+					newState = slowMotionMidSpeed;
+				else
+					newState = slowMotionLowSpeed;
+
+				if( oldState == slowMotionHighSpeed && newState == slowMotionHighSpeed )
+				{
+					s_iUseNonSlowDownCount++;
+				}
+				if( oldState == slowMotionHighSpeed && newState == slowMotionMidSpeed || 
+					oldState == slowMotionMidSpeed && newState == slowMotionLowSpeed )
+				{
+					// Sudden slow down. This occurs when the client re-synchronizes with the server.
+					s_iUseSlowDownCount++;
+				}
+				else if( oldState == slowMotionLowSpeed && newState == slowMotionHighSpeed )
+				{
+					float prevCheckTime = s_flUseSlowdownCheckTime;
+					PM_ResetUseSlowDownDetection();
+					s_flUseSlowdownCheckTime = prevCheckTime;
+				}
+
+				if( s_iUseSlowDownCount >= 5 )
+				{
+					// Slow down has happened a few times. Assume the server uses the old method.
+					PM_ResetUseSlowDownDetection();
+					pmove->Con_Printf( "Using Old style \"+use\" to match the server.\n" );
+					s_nUseSlowDownDetectionState = slowMotionDone;
+					s_bUseSlowdownNew = 0;
+				}
+				else
+				{
+					s_nUseSlowDownDetectionState = newState;
+				}
+				if( s_iUseNonSlowDownCount > 50 )
+				{
+					PM_ResetUseSlowDownDetection();
+					pmove->Con_Printf( "Using New style \"+use\" to match the server.\n" );
+					s_nUseSlowDownDetectionState = slowMotionDone;
+				}
+			}
+			else
+			{
+				// Reset auto-detection
+				PM_ResetUseSlowDownDetection();
+			}
+		}
+	}
+	else if( s_nUseSlowDownDetectionState != slowMotionDone )
+	{
+		// Reset auto-detection
+		PM_ResetUseSlowDownDetection();
 	}
 
 	// Handle movement
